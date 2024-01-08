@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+
+
+    <h1>CHAT ROOM</h1>
+    <input type="text" id="from" value="<%= data.email %>" placeholder="from" readonly>
+    <select name="to" id="to">
+        <option value="">Select To</option>
+        <option value="gamaariefsadya@gmail.com">gamaariefsadya@gmail.com</option>
+        <option value="arief@gmail.com">arief@gmail.com</option>
+    </select>
+    <div id="messages">
+
+
+
+    </div>
+
+    <br>
+    <input type="text" id="message"> <br>
+    <button type="button" id="submit">Submit!</button>
+
+</body>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+
+
+<script>
+
+    let urlSocket = "http://localhost:4000";
+    let jwtToken = $("#token").val();
+    const socket = io(urlSocket)
+
+
+
+    $("#to").change(() => {
+
+        socket.emit('get-message', { from: $("#from").val(), to: $("#to").val() });
+    })
+
+    $("#submit").click(() => {
+        let message = $("#message").val()
+        let from = $("#from").val()
+
+        socket.emit('send-message',
+            {
+                from: from,
+                to: $("#to").val(),
+                message: message
+            });
+
+
+        let html = ` <div class="message">
+                        <span class="sender">${from}:</span> <span class="content">${message}</span>
+                     </div>`
+        $('#messages').append(html)
+
+        $('#message').val("")
+
+
+    })
+
+
+
+
+    socket.on('messages', (messages) => {
+
+        let html = ''
+        if (messages.length == undefined) {
+            html += ` <div class="message">
+                        <span class="sender">${messages.from}:</span> <span class="content">${messages.message}</span>
+                     </div>`
+            $('#messages').append(html)
+
+
+        } else {
+            messages.map((m) => {
+
+                html += ` <div class="message">
+                        <span class="sender">${m.from}:</span> <span class="content">${m.message}</span>
+                     </div>`
+
+
+            })
+            $('#messages').html(html)
+
+        }
+
+
+
+
+    });
+
+
+
+
+
+</script>
+
+</html>

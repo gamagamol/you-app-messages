@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+
+
+    <h1>CHAT ROOM</h1>
+
+    <select name="to" id="to">
+        <option value="">Select to</option>
+        <option value="gamaariefsadya@gmail.com">gamaariefsadya@gmail.com</option>
+        <option value="arief@gmail.com">arief@gmail.com</option>
+    </select>
+    <div class="" id="list_pesan">
+    </div><br>
+    <input type="text" id="message"> <br>
+    <button type="button" id="submit">Submit!</button>
+
+</body>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+
+
+<script>
+    $(document).ready(function () {
+
+        let url = "http://localhost:4000/messages-app/";
+        let jwtToken = $("#token").val();
+        const socket = io(url)
+
+        socket.on("connected", socket => {
+            console.log(socket.id)
+        })
+
+
+
+
+
+        //get message
+        $("#to").change(() => {
+            let to = $("#to").val()
+            let from = $("#from").val()
+            console.log({ from, to, jwtToken, url })
+
+            $.ajax({
+                url: url + "get_message",
+                method: 'post',
+                headers: {
+                    Authorization: `Bearer ${jwtToken}`,
+                },
+                data: { from, to },
+                dataType: 'json',
+                success: function (response) {
+                    let html = ``
+                    response.payload.map((m) => {
+                        html += `<p>${m.message}<p> <br>`
+
+                    })
+
+                    $("#list_pesan").html(html)
+                },
+            });
+
+        })
+
+        //insert message
+        $("#submit").click(() => {
+            socket.emit("messages", {
+                text: $("#message").val()
+            })
+        })
+
+
+
+        /* $("#submit").click(() => {
+             let to = $("#to").val()
+             let from = $("#from").val()
+             let message = $("#message").val()
+             console.log({ from, to, jwtToken, url })
+ 
+             $.ajax({
+                 url: url + "send_message",
+                 method: 'post',
+                 headers: {
+                     Authorization: `Bearer ${jwtToken}`,
+                 },
+                 data: { from, to, message },
+                 dataType: 'json',
+                 success: function (response) {
+                     let html = ``
+                     response.payload.map((m) => {
+                         html += `<p>${m.message}<p> <br>`
+ 
+                     })
+ 
+                     console.log(html)
+ 
+                     $("#list_pesan").html(html)
+                 },
+             });
+ 
+         })*/
+
+    });
+
+
+</script>
+
+</html>
