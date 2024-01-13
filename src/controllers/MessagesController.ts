@@ -2,12 +2,9 @@
 import axios from 'axios';
 import { format } from 'date-fns';
 import { Request, Response } from 'express';
+import db from '../db/db';
 import { messageDto, messageResponse } from '../dto/messageDto';
-import MessagesModel from '../models/MessagesModels';
-import UserModel from '../models/UsersModels';
 
-let access_token: any;
-let email_login: string;
 
 declare module 'express-session' {
   interface SessionData {
@@ -20,7 +17,11 @@ export async function getMessage(req: Request, res: Response) {
   let from: string = req.body.from;
   let to: string = req.body.to;
 
-  let user = await UserModel.findOne({ email: from });
+  let user = await db.userModel.findFirst({
+    where: {
+      email: from,
+    },
+  });
 
   if (user == null) {
     mr = {
@@ -31,12 +32,19 @@ export async function getMessage(req: Request, res: Response) {
     return res.status(400).json(mr);
   } else {
     try {
-      const message = await MessagesModel.find({ from: from, to: to });
+      const messages = await db.messagesModel.findMany({
+        where: {
+          OR: [{ from: { in: [from, to] } }, { to: { in: [from, to] } }],
+        },
+        orderBy: {
+          createdAt: 'asc',
+        },
+      });
 
       mr = {
         message: 'success',
         status: 200,
-        payload: message,
+        payload: messages,
       };
       return res.status(200).json(mr);
     } catch (error) {
@@ -61,7 +69,9 @@ export async function insertMessage(req: Request, res: Response) {
   // const errors = await validate(messageDto);
 
   try {
-    const messageResult = await new MessagesModel(messageDto).save();
+    const messageResult = await db.messagesModel.create({
+      data: messageDto,
+    });
 
     mr = {
       message: 'success',
@@ -94,10 +104,11 @@ export async function chat(req: Request, res: Response) {
 export async function login(req: Request, res: Response) {
   let email: string = req.body.email;
   let password: string = req.body.password;
+  let url: string = 'http://profile-app:3000/api/login';
 
   try {
     const response = await axios.post(
-      'http://localhost:3000/api/login',
+      url,
       {
         email: email,
         password: password,
@@ -109,8 +120,7 @@ export async function login(req: Request, res: Response) {
       }
     );
 
-    access_token = response.data.access_token;
-    req.session.email=email
+    req.session.email = email;
 
     res.redirect('/messages-app/chat');
   } catch (error) {
